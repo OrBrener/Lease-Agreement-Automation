@@ -1,8 +1,7 @@
-
- function onOpen() {
+function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  const menu = ui.createMenu('Autofill Docs');
-  menu.addItem('Create New Docs', 'createnewGoogleDocs')
+  const menu = ui.createMenu('Automations');
+  menu.addItem('Create Lease Agreement', 'createNewLeaseAgreement')
   menu.addToUi();
 }
 
@@ -30,72 +29,102 @@ function getOrCreateSubFolder(childFolderName, parentFolderName) {
   return childFolder;
 }
 
-var UnitAddressFromSheet = SpreadsheetApp.getActiveSheet().getRange(2, 6).getValue();
-var destFolderName = UnitAddressFromSheet;
+var unitAddress = SpreadsheetApp.getActiveSheet().getRange(2, 6).getValue();
+var destFolderName = unitAddress;
+var parentFolderName = DriveApp.getFolderById('1h05K-Iaut-iUSbgJQUcPnmorF1wc5P9W').getName();
+var destFolder = getOrCreateSubFolder( destFolderName, parentFolderName);
 
-var destFolder = getOrCreateSubFolder( destFolderName, DriveApp.getFolderById('1h05K-Iaut-iUSbgJQUcPnmorF1wc5P9W').getName());
+function createNewLeaseAgreement(){
+  const leaseTemplate = DriveApp.getFileById('1ey1ypl7X_j7Iv0Gg1oHsCs6Z1028pIcVJYNRRn1Tpmk');
+  var folderId = DriveApp.getFoldersByName(destFolder).next().getId();
+  const leaseFolder = DriveApp.getFolderById(folderId);
+  const inputSheet =  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Sheet1');
+  const rows = inputSheet.getDataRange().getValues();  
 
-function createnewGoogleDocs(){
-  const googleDocTemplate = DriveApp.getFileById('1kkZixmy3M2ilWZWDb9GCKCxV0hiJ6zUZFQYZuGPXCuY');
-  var id = DriveApp.getFoldersByName(destFolder).next().getId();
-  const destinationfolder = DriveApp.getFolderById(id);
-  const sheet =  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Sheet1');
-  const rows = sheet.getDataRange().getValues();
+  const leaseTermLength = rows[1][6]
+  var numYears = {
+    "1 year (12)": 1,
+    "2 years (24)": 2,
+    "3 years (36)": 3
+  } 
+  const leaseStartDate = new Date(rows[1][7]).toLocaleDateString();
+  const year1EndDate = new Date(rows[1][8]).toLocaleDateString();
+  const year2StartDate = new Date(rows[1][9]).toLocaleDateString();
+  const year2EndDate = new Date(rows[1][10]).toLocaleDateString();
+  const year3StartDate = new Date(rows[1][11]).toLocaleDateString();
+  const year3EndDate = new Date(rows[1][12]).toLocaleDateString();
+  const amountYear1 = Math.round(rows[1][13] * 100) / 100
+  const amountMonth1 = Math.round(rows[1][14] * 100) / 100
+  const amountYear2 = Math.round(rows[1][15] * 100) / 100
+  const amountMonth2 = Math.round(rows[1][16] * 100) / 100
+  const amountYear3 = Math.round(rows[1][17] * 100) / 100
+  const amountMonth3 = Math.round(rows[1][18] * 100) / 100
+  const firstLast = Math.round(rows[1][19] * 100) / 100
+  const tmi1 = Math.round(rows[1][20] * 100) / 100
+  const utilities1 = Math.round(rows[1][21] * 100) / 100
+  const tmi2 = Math.round(rows[1][22] * 100) / 100
+  const utilities2 = Math.round(rows[1][23] * 100) / 100
+  const tmi3 = Math.round(rows[1][24] * 100) / 100
+  const utilities3 = Math.round(rows[1][25] * 100) / 100
+  const totalAmount1 = Math.round(rows[1][26] * 100) / 100
+  const totalAmount2 = Math.round(rows[1][27] * 100) / 100
+  const totalAmount3 = Math.round(rows[1][28] * 100) / 100
+  
+  var leaseName = rows[1][5] +  ' ' + leaseStartDate + ' Lease Agreement';
+  const leaseTemplateCpy = leaseTemplate.makeCopy(leaseName, leaseFolder)
+  const lease = DocumentApp.openById(leaseTemplateCpy.getId())
+  const body = lease.getBody();
 
-  rows.forEach(function(row, index) {
-  if (index === 0) return;
-  if (row[32]) return; 
+  var endDate = year1EndDate;
+
+  var rentAmount = `From ${leaseStartDate} to ${year1EndDate} inclusive ${amountYear1} per annum being ${amountMonth1} per month.\n` 
+
+  var tmi = `Year 1 -TMI (Property Tax, Maintenance and Insurance) - ${tmi1} CAD and  ${utilities1}  CAD for Utilities.\n` 
+  
+  var rentAmount2 = `From ${leaseStartDate}  to  ${year1EndDate} - gross rent ${amountMonth1}  CAD plus ${utilities1}  CAD for Utilities plus ${tmi1} CAD for TMI  plus HST  totaling to ${totalAmount1} per month.\n\n`
+
+
+  if (numYears[leaseTermLength] >= 2) {
+
+    endDate = year2EndDate
+
+    rentAmount += `From ${year2StartDate} to ${year2EndDate} inclusive ${amountYear2} per annum being ${amountMonth2} per month.\n`
+    
+    tmi += `Year 2 -TMI (Property Tax, Maintenance and Insurance) - ${tmi2} CAD and  ${utilities2}  CAD for Utilities.\n` 
+    
+    rentAmount2 += `From ${year2StartDate}  to  ${year2EndDate} - gross rent ${amountMonth2}  CAD plus ${utilities2}  CAD for Utilities plus ${tmi2} CAD for TMI  plus HST  totaling to ${totalAmount2} per month.\n\n`
   
 
+  }
+  if (numYears[leaseTermLength] >= 3) {
+    endDate = year3EndDate
 
-  const friendlyDate = new Date(row[7]).toLocaleDateString();
-  const friendlyDate1 = new Date(row[8]).toLocaleDateString();
-  const friendlyDate2 = new Date(row[9]).toLocaleDateString();
-  const friendlyDate3 = new Date(row[10]).toLocaleDateString();
-  const friendlyDate4 = new Date(row[11]).toLocaleDateString();
-  const friendlyDate5 = new Date(row[12]).toLocaleDateString();
+    rentAmount += `From ${year3StartDate} to ${year3EndDate} inclusive ${amountYear3} per annum being ${amountMonth3} per month.\n`
 
-  var name = row[5] +  friendlyDate + ' Lease Agreement';
+    tmi += `Year 3 -TMI (Property Tax, Maintenance and Insurance) - ${tmi3} CAD and  ${utilities3}  CAD for Utilities.\n` 
+    
+    rentAmount2 += `From ${year3StartDate}  to  ${year3EndDate} - gross rent ${amountMonth3}  CAD plus ${utilities3}  CAD for Utilities plus ${tmi3} CAD for TMI  plus HST  totaling to ${totalAmount3} per month.\n\n`
+  }
 
-  const copy = googleDocTemplate.makeCopy(name, destinationfolder)
-  const doc = DocumentApp.openById(copy.getId())
-  const body = doc.getBody();
-    body.replaceText('{{TENANTNAME}}', row[0]);
-    body.replaceText('{{LANDLORDNAME}}', row[1]);
-    body.replaceText('{{SQFT1}}', row[2]);
-    body.replaceText('{{FLOOR1}}', row[3]);
-    body.replaceText('{{UNITADDRESS}}', row[5]);
-    body.replaceText('{{OFFICEUSE}}', row[4]);
-    body.replaceText('{{XYEARXMONTH}}', row[6]);
-    body.replaceText('{{LEASESTART1}}', friendlyDate);
-    body.replaceText('{{LEASEEND1}}', friendlyDate1);
-    body.replaceText('{{LEASESTART2}}',friendlyDate2);
-    body.replaceText('{{LEASEEND2}}', friendlyDate3);
-    body.replaceText('{{LEASESTART3}}', friendlyDate4);
-    body.replaceText('{{LEASEEND3}}', friendlyDate5);
-    body.replaceText('{{AMTYEAR1}}', Math.round(row[13] * 100) / 100);
-    body.replaceText('{{AMTMONTH1}}', Math.round(row[14] * 100) / 100);
-    body.replaceText('{{AMTYEAR2}}', Math.round(row[15] * 100) / 100);
-    body.replaceText('{{AMTMONTH2}}', Math.round(row[16] * 100) / 100);
-    body.replaceText('{{AMTYEAR3}}', Math.round(row[17] * 100) / 100);
-    body.replaceText('{{AMTMONTH3}}', Math.round(row[18] * 100) / 100);
-    body.replaceText('{{FIRSTLAST}}', Math.round(row[19] * 100) / 100);
-    body.replaceText('{{TM11}}', Math.round(row[20] * 100) / 100);
-    body.replaceText('{{UTILIT11}}', Math.round(row[21] * 100) / 100);
-    body.replaceText('{{TM12}}', Math.round(row[22] * 100) / 100);
-    body.replaceText('{{UTILIT12}}', Math.round(row[23] * 100) / 100);
-    body.replaceText('{{TM13}}', Math.round(row[24] * 100) / 100);
-    body.replaceText('{{UTILIT13}}', Math.round(row[25] * 100) / 100);
-    body.replaceText('{{TOTALAMOUNT1}}', Math.round(row[26] * 100) / 100);
-    body.replaceText('{{TOTALAMOUNT2}}', Math.round(row[27] * 100) / 100);
-    body.replaceText('{{TOTALAMOUNT3}}', Math.round(row[28] * 100) / 100);
-    body.replaceText('{{TENANTPHONE}}', row[29]);
-    body.replaceText('{{TENANTEMAIL}}', row[30]);
-    body.replaceText('{{LEASECONDITION}}', row[31]);
+  body.replaceText('{{LEASEEND}}', endDate);
+  body.replaceText('{{RENTAL}}', rentAmount);
+  body.replaceText('{{TMI}}', tmi);
+  body.replaceText('{{RENTAL2}}', rentAmount2);
+  body.replaceText('{{TENANTNAME}}', rows[1][0]);
+  body.replaceText('{{LANDLORDNAME}}', rows[1][1]);
+  body.replaceText('{{SQFT1}}', rows[1][2]);
+  body.replaceText('{{FLOOR1}}', rows[1][3]);
+  body.replaceText('{{UNITADDRESS}}', rows[1][5]);
+  body.replaceText('{{OFFICEUSE}}', rows[1][4]);
+  body.replaceText('{{XYEARXMONTH}}', rows[1][6]);
+  body.replaceText('{{LEASESTART}}', leaseStartDate);
+  body.replaceText('{{FIRSTLAST}}', firstLast);
+  body.replaceText('{{TENANTPHONE}}', rows[1][30]);
+  body.replaceText('{{TENANTEMAIL}}', rows[1][29]);
+  body.replaceText('{{LEASECONDITION}}', rows[1][31]);
 
-    doc.saveAndClose();
-    const url = doc.getUrl();
-    sheet.getRange(index + 1, 33).setValue(url) 
-  })
 
+  lease.saveAndClose();
+  const leaseUrl = lease.getUrl();
+  inputSheet.getRange(2, 33).setValue(leaseUrl) 
 }
